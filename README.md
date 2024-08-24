@@ -1,9 +1,11 @@
 # **Walmart Sales Data Analysis**
 
 **Project Overview**
-This project aims to explore Walmart's sales data to identify top-performing branches and products, analyze sales trends across different product categories, and understand customer behavior. The goal is to derive insights that can be used to improve and optimize sales strategies.
+
+This project aims to explore Walmart's sales data to identify top-performing branches and products, analyze sales trends across different product categories, and understand customer behaviour. The goal is to derive insights that can be used to improve and optimize sales strategies.
 
 **Project Objectives**
+
 The primary objective of this project is to gain insights into the sales data of Walmart stores, focusing on the factors that influence sales performance across different branches and product lines.
 
 **Dataset Description**
