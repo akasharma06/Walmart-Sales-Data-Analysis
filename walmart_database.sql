@@ -1,0 +1,414 @@
+-- Create database
+
+CREATE DATABASE IF NOT EXISTS walmart_database;
+
+
+-- Create table
+
+CREATE TABLE IF NOT EXISTS sales (
+    invoice_id VARCHAR(30) NOT NULL PRIMARY KEY,
+    branch VARCHAR(5) NOT NULL,
+    city VARCHAR(30) NOT NULL,
+    customer_type VARCHAR(30) NOT NULL,
+    gender VARCHAR(30) NOT NULL,
+    product_line VARCHAR(100) NOT NULL,
+    unit_price DECIMAL(10 , 2 ) NOT NULL,
+    quantity INT NOT NULL,
+    VAT DECIMAL(6 , 4 ) NOT NULL,
+    total DECIMAL(12 , 5 ) NOT NULL,
+    date DATETIME NOT NULL,
+    time TIME NOT NULL,
+    payment_method VARCHAR(15) NOT NULL,
+    cogs DECIMAL(10 , 2 ) NOT NULL,
+    gross_margin_percent DECIMAL(11 , 9 ),
+    gross_income DECIMAL(12 , 4 ),
+    rating DECIMAL(2 , 1 )
+);
+
+
+-- Add the time_of_day column
+
+SELECT 
+    time,
+    (CASE
+        WHEN `time` BETWEEN '00:00:00' AND '12:00:00' THEN 'Morning'
+        WHEN `time` BETWEEN '12:00:01' AND '16:00:00' THEN 'Afternoon'
+        ELSE 'Evening'
+    END) AS time_of_day
+FROM
+    sales;
+
+
+ALTER TABLE sales ADD COLUMN time_of_day VARCHAR(20);
+
+
+UPDATE sales 
+SET 
+    time_of_day = (CASE
+        WHEN `time` BETWEEN '00:00:00' AND '12:00:00' THEN 'Morning'
+        WHEN `time` BETWEEN '12:01:00' AND '16:00:00' THEN 'Afternoon'
+        ELSE 'Evening'
+    END);
+
+
+-- Add day_name column
+
+SELECT 
+    date, DAYNAME(date)
+FROM
+    sales;
+    
+
+ALTER TABLE sales ADD COLUMN day_name VARCHAR(10);
+
+
+UPDATE sales 
+SET 
+    day_name = DAYNAME(date);
+
+
+-- Add month_name column
+
+SELECT
+	date,
+	MONTHNAME(date)
+FROM sales;
+
+ALTER TABLE sales ADD COLUMN month_name VARCHAR(10);
+
+UPDATE sales 
+SET 
+    month_name = MONTHNAME(date);
+
+
+-- Generic Questions
+-- How many unique cities does the data have?
+
+SELECT 
+	DISTINCT city
+FROM sales;
+
+-- In which city is each branch?
+
+SELECT DISTINCT
+    city, branch
+FROM
+    sales;
+
+
+-- Product Questions
+-- How many unique product lines does the data have?
+
+SELECT 
+    COUNT(DISTINCT product_line) AS num_products
+FROM
+    sales;
+
+-- What is the most common payment method? 
+
+SELECT 
+    payment_method, COUNT(payment_method) AS count
+FROM
+    sales
+GROUP BY payment_method
+ORDER BY count DESC
+LIMIT 1;
+
+-- Which are the top 5 most selling product line?
+
+SELECT 
+    product_line, COUNT(product_line) AS count
+FROM
+    sales
+GROUP BY product_line
+ORDER BY count DESC
+LIMIT 5;
+
+-- What is the total revenue by month
+
+SELECT 
+    month_name AS month, SUM(total) AS total_revenue
+FROM
+    sales
+GROUP BY month_name
+ORDER BY total_revenue DESC;
+
+-- Which product line generates the largest revenue?
+
+SELECT 
+    product_line, ROUND(SUM(total), 2) AS total_revenue
+FROM
+    sales
+GROUP BY product_line
+ORDER BY total_revenue DESC
+LIMIT 1;
+
+-- What is the contribution of cities in revenue?
+
+SELECT 
+    branch, city, ROUND(SUM(total), 2) AS total_revenue
+FROM
+    sales
+GROUP BY branch , city
+ORDER BY total_revenue DESC;
+
+-- What is the average tax by product line?
+
+SELECT 
+    product_line, ROUND(AVG(VAT), 2) AS avg_tax
+FROM
+    sales
+GROUP BY product_line
+ORDER BY avg_tax DESC;
+
+-- Which branch sold more products than the average product?
+
+SELECT 
+    branch, SUM(quantity) AS quantity
+FROM
+    sales
+GROUP BY branch
+HAVING SUM(quantity) > (SELECT 
+        AVG(quantity)
+    FROM
+        sales);
+
+
+-- Which is the most common product line by gender? 
+
+SELECT 
+    gender, product_line, COUNT(product_line) AS total_count
+FROM
+    sales
+GROUP BY gender , product_line
+ORDER BY total_count DESC;
+
+-- What is the average rating of each product line? 
+
+SELECT 
+    product_line, ROUND(AVG(rating), 2) AS avg_rating
+FROM
+    sales
+GROUP BY product_line
+ORDER BY avg_rating DESC;
+
+
+-- Sales Questions
+-- Total number of sales made per time of the day on each weekday
+
+SELECT 
+    day_name, time_of_day, COUNT(*) AS total_sales
+FROM
+    sales
+GROUP BY day_name , time_of_day
+ORDER BY CASE day_name
+    WHEN 'Sunday' THEN 1
+    WHEN 'Monday' THEN 2
+    WHEN 'Tuesday' THEN 3
+    WHEN 'Wednesday' THEN 4
+    WHEN 'Thursday' THEN 5
+    WHEN 'Friday' THEN 6
+    WHEN 'Saturday' THEN 7
+END , CASE time_of_day
+    WHEN 'Morning' THEN 1
+    WHEN 'Afternoon' THEN 2
+    WHEN 'Evening' THEN 3
+END;
+
+-- Which customer type brings the most revenue?
+
+SELECT 
+    customer_type, SUM(total) AS total_revenue
+FROM
+    sales
+GROUP BY customer_type
+ORDER BY total_revenue DESC;
+    
+-- Which city has the largest tax percent?
+
+SELECT 
+    city, ROUND(SUM(VAT), 2) AS total_tax
+FROM
+    sales
+GROUP BY city
+ORDER BY total_tax DESC
+LIMIT 1;
+
+
+-- Customer Questions
+-- How many unique customer types are in the table?
+
+SELECT DISTINCT
+    customer_type
+FROM
+    sales
+;
+
+-- How many sales were made by each customer type?
+
+SELECT 
+    customer_type, COUNT(*) AS number_of_sales
+FROM
+    sales
+GROUP BY customer_type;
+
+-- Which customer type had the highest average rating?
+
+SELECT 
+    customer_type, AVG(rating) AS average_rating
+FROM
+    sales
+GROUP BY customer_type
+ORDER BY average_rating DESC
+LIMIT 1;
+
+-- What is the total revenue generated by each customer type?
+
+SELECT 
+    customer_type, ROUND(SUM(total), 2) AS total_revenue
+FROM
+    sales
+GROUP BY customer_type;
+
+-- Which gender has the highest average unit price?
+
+SELECT 
+    gender, AVG(unit_price) AS average_unit_price
+FROM
+    sales
+GROUP BY gender
+ORDER BY average_unit_price DESC
+;
+
+-- How many sales were made in each city by 'member' customer type?
+
+SELECT 
+    city, COUNT(*) AS number_of_sales
+FROM
+    sales
+WHERE
+    customer_type = 'member'
+GROUP BY city;
+
+-- What is the total gross income for each customer type and city combined?
+
+SELECT 
+    customer_type, city, SUM(gross_income) AS total_gross_income
+FROM
+    sales
+GROUP BY customer_type , city
+ORDER BY customer_type;
+
+-- Which customer type and city combination has the highest total tax amount?
+
+SELECT 
+    customer_type, city, ROUND(SUM(VAT), 2) AS total_tax
+FROM
+    sales
+GROUP BY customer_type , city
+ORDER BY total_tax DESC
+LIMIT 1;
+
+-- Find the average unit price and quantity for each customer type. 
+-- What is the customer type with the highest average unit price and quantity?
+
+SELECT 
+    customer_type,
+    ROUND(AVG(unit_price), 2) AS average_unit_price,
+    ROUND(AVG(quantity), 2) AS average_quantity
+FROM
+    sales
+GROUP BY customer_type
+ORDER BY average_unit_price DESC , average_quantity DESC
+;
+
+-- Identify the customer type that has generated the highest gross margin percentage.
+
+SELECT 
+    customer_type,
+    AVG(gross_margin_percent) AS average_gross_margin
+FROM
+    sales
+GROUP BY customer_type
+ORDER BY average_gross_margin DESC
+LIMIT 1;
+
+-- Find the total tax amount for each city and the customer type that contributed the most tax in each city.
+
+WITH CityTax AS (
+    SELECT 
+        city, 
+        customer_type, 
+        SUM(VAT) AS total_tax
+    FROM 
+        sales
+    GROUP BY 
+        city, 
+        customer_type
+)
+SELECT 
+    city, 
+    customer_type, 
+    total_tax
+FROM 
+    CityTax
+WHERE 
+    total_tax = (
+        SELECT MAX(total_tax)
+        FROM CityTax AS CT
+        WHERE CT.City = CityTax.City
+    );
+    
+-- What is the total revenue for the highest-grossing customer type in each city?
+
+WITH RevenueByCustomerType AS (
+    SELECT 
+        city, 
+        customer_type, 
+        SUM(total) AS total_revenue
+    FROM 
+        sales
+    GROUP BY 
+        city, 
+        customer_type
+)
+SELECT 
+    city, 
+    customer_type, 
+    total_revenue
+FROM 
+    RevenueByCustomerType
+WHERE 
+    total_revenue = (
+        SELECT MAX(total_revenue)
+        FROM RevenueByCustomerType AS RCT
+        WHERE RCT.City = RevenueByCustomerType.City
+    );
+    
+-- Which city has the highest total gross income from 'normal' customer type, and what is that total?
+
+WITH MemberGrossIncome AS (
+    SELECT 
+        city, 
+        SUM(gross_income) AS total_gross_income
+    FROM 
+        sales
+    WHERE 
+        customer_type = 'normal'
+    GROUP BY 
+        city
+)
+SELECT 
+    city, 
+    total_gross_income
+FROM 
+    MemberGrossIncome
+WHERE 
+    total_gross_income = (
+        SELECT MAX(total_gross_income)
+        FROM MemberGrossIncome
+    );
+
+
+
+    
